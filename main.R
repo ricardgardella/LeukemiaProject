@@ -1,4 +1,6 @@
 
+# 1 and 2
+
 train <- read.csv("data/data_set_ALL_AML_train.csv", sep=";", header=TRUE)
 test  <- read.csv("data/data_set_ALL_AML_independent.csv", sep=";", header=TRUE)
 
@@ -22,6 +24,9 @@ Y_train <- traint[,ind.resp]
 
 X_test <- testt[,-ind.resp]
 
+
+# 3
+
 p1 <- plsr(response ~ ., ncomp = 10, data = traint, validation = "LOO")
 plot(RMSEP(p1), legendpos = "topright")
 
@@ -38,27 +43,30 @@ abline(h=0,v=0, col="gray")
 plot(p1, ncomp = nd, asp = 1, line = TRUE, type="n")
 text(Y_train, p1$fitted.values[,,nd], labels=rownames(X_train), col=as.vector(factor(response,levels=c(0,1),labels=c("red","blue"))))
 
-scale(X_train,scale=F) %*% p1$projection
 
-
-
-Y_test_pred <- predict(p1, ncomp=nd, newdata=X_test)
-
-response_test <- c(rep(1,11),rep(0,5),rep(1,2),rep(0,2),rep(1,1),rep(0,7),rep(1,6))
-Y_test_pred <- predict(p1, newdata=X_test)
-text(response.test, Y_test_pred, labels=rownames(X_train), col=as.vector(factor(response_test,levels=c(0,1),labels=c("red","blue"))))
-
-
+# 4
 
 X_train_pls <- as.data.frame(p1$scores[,1:nd])
 train_pls <- cbind(X_train_pls, response)
 
-X_test_pls <- as.data.frame(scale(X_test,scale=F) %*% p1$projection)
+X_test_pls <- as.data.frame(scale(X_test,scale=F) %*% p1$projection)[,1:nd]
 test_pls <- cbind(X_test_pls, response_test)
+
+
+# 5
+
+
+# 6
 
 logit.mod <- glm(response ~ ., data=train.pls, family=binomial(link="logit"))
 train_predicted <- predict(logit.mod, X_train_pls, type="response")
 
+
+# 7
+
 test_predicted <- predict(logit.mod, X_test_pls, type="response")
 
-plot(response, predicted)
+plot(response_test, test_predicted)
+
+
+
