@@ -1,4 +1,6 @@
 
+library("pls")
+
 # 1 and 2
 
 train <- read.csv("data/data_set_ALL_AML_train.csv", sep=";", header=TRUE)
@@ -46,11 +48,12 @@ text(Y_train, p1$fitted.values[,,nd], labels=rownames(X_train), col=as.vector(fa
 
 # 4
 
-X_train_pls <- as.data.frame(p1$scores[,1:nd])
-train_pls <- cbind(X_train_pls, response)
+X_train_pls <- p1$scores
+train_pls <- as.data.frame(cbind(X_train_pls, response))
+X_train_pls <- train_pls[,which(colnames(train_pls)!="response")]
 
-X_test_pls <- as.data.frame(scale(X_test,scale=F) %*% p1$projection)[,1:nd]
-test_pls <- cbind(X_test_pls, response_test)
+X_test_pls <- scale(X_test,scale=F) %*% p1$projection
+X_test_pls <- as.data.frame(X_test_pls)
 
 
 # 5
@@ -58,7 +61,7 @@ test_pls <- cbind(X_test_pls, response_test)
 
 # 6
 
-logit.mod <- glm(response ~ ., data=train.pls, family=binomial(link="logit"))
+logit.mod <- glm(response ~ ., data=train_pls, family=binomial(link="logit"))
 train_predicted <- predict(logit.mod, X_train_pls, type="response")
 
 
