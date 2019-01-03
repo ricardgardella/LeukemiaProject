@@ -54,9 +54,8 @@ X_train_pls <- train_pls[,which(colnames(train_pls)!="response")]
 
 X_test_centered <- scale(X_test, center = colMeans(X_train), 
                     scale = FALSE)
-X_test_centered <- as.data.frame(X_test_centered)
 
-X_test_pls <- scale(X_test,scale=F) %*% p1$projection
+X_test_pls <- X_test_centered %*% p1$projection
 X_test_pls <- as.data.frame(X_test_pls)
 
 
@@ -72,8 +71,8 @@ train_predicted <- predict(logit.mod, X_train_pls, type="response")
 # 7
 
 test_predicted <- predict(logit.mod, X_test_pls, type="response")
-
-plot(response_test, test_predicted)
+test_response <- c(rep(1,11),rep(0,5),rep(1,2),rep(0,2),rep(1,1),rep(0,7),rep(1,6))
+plot(test_response, test_predicted)
 
 
 
