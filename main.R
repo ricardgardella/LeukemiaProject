@@ -29,7 +29,7 @@ X_test <- testt[,-ind.resp]
 
 # 3
 
-p1 <- plsr(response ~ ., ncomp = 10, data = traint, validation = "LOO")
+p1 <- plsr(response ~ ., center = TRUE, ncomp = 10, data = traint, validation = "LOO")
 plot(RMSEP(p1), legendpos = "topright")
 
 R2(p1)
@@ -51,6 +51,10 @@ text(Y_train, p1$fitted.values[,,nd], labels=rownames(X_train), col=as.vector(fa
 X_train_pls <- p1$scores
 train_pls <- as.data.frame(cbind(X_train_pls, response))
 X_train_pls <- train_pls[,which(colnames(train_pls)!="response")]
+
+X_test_centered <- scale(X_test, center = colMeans(X_train), 
+                    scale = FALSE)
+X_test_centered <- as.data.frame(X_test_centered)
 
 X_test_pls <- scale(X_test,scale=F) %*% p1$projection
 X_test_pls <- as.data.frame(X_test_pls)
