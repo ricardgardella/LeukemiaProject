@@ -18,9 +18,11 @@ filter_dataset <- function(df) {
 traint <- filter_dataset(train)
 testt <- filter_dataset(test)
 
-response <- c(rep(1,27),rep(0,11))
-traint <- cbind(traint, response)
-ind.resp <- which(colnames(traint)=="response")
+train_response <- c(rep(0,27),rep(1,11))
+test_response <- c(rep(0,11),rep(1,5),rep(0,2),rep(1,2),rep(0,1),rep(1,7),rep(0,6))
+
+traint <- cbind(traint, train_response)
+ind.resp <- which(colnames(traint)=="train_response")
 X_train <- traint[,-ind.resp]
 Y_train <- traint[,ind.resp]
 
@@ -29,7 +31,7 @@ X_test <- testt[,-ind.resp]
 
 # 3
 
-p1 <- plsr(response ~ ., center = TRUE, ncomp = 10, data = traint, validation = "LOO")
+p1 <- plsr(train_response ~ ., center = TRUE, ncomp = 10, data = traint, validation = "LOO")
 plot(RMSEP(p1), legendpos = "topright")
 
 R2(p1)
@@ -38,19 +40,19 @@ plot(R2(p1), legendpos = "bottomright")
 nd <- 4
 
 plot(p1, plottype = "scores", comps = 1:2, type="n", main="X Scores")
-text(p1$scores, labels=rownames(p1$scores), col=as.vector(factor(response,levels=c(0,1),labels=c("red","blue"))))
+text(p1$scores, labels=rownames(p1$scores), col=as.vector(factor(train_response,levels=c(0,1),labels=c("red","blue"))))
 abline(h=0,v=0, col="gray")
 
 # prediction plot
-plot(p1, ncomp = nd, asp = 1, line = TRUE, type="n")
-text(Y_train, p1$fitted.values[,,nd], labels=rownames(X_train), col=as.vector(factor(response,levels=c(0,1),labels=c("red","blue"))))
+#plot(p1, ncomp = nd, asp = 1, line = TRUE, type="n")
+#text(Y_train, p1$fitted.values[,,nd], labels=rownames(X_train), col=as.vector(factor(train_response,levels=c(0,1),labels=c("red","blue"))))
 
 
 # 4
 
 X_train_pls <- p1$scores
-train_pls <- as.data.frame(cbind(X_train_pls, response))
-X_train_pls <- train_pls[,which(colnames(train_pls)!="response")]
+train_pls <- as.data.frame(cbind(X_train_pls, train_response))
+X_train_pls <- train_pls[,which(colnames(train_pls)!="train_response")]
 
 X_test_centered <- scale(X_test, center = colMeans(X_train), 
                     scale = FALSE)
@@ -60,19 +62,32 @@ X_test_pls <- as.data.frame(X_test_pls)
 
 
 # 5
+plot(p1, plottype = "scores", comps = 1:2, type="n", main="X Scores")
+text(X_train_pls, labels=rownames(X_train_pls), col=as.vector(factor(train_response,levels=c(0,1),labels=c("red","blue"))))
+text(X_test_pls, labels=rownames(X_test_pls), col=as.vector(factor(test_response,levels=c(0,1),labels=c("darkred","darkblue"))))
+
 
 
 # 6
 
-logit.mod <- glm(response ~ ., data=train_pls, family=binomial(link="logit"))
-train_predicted <- predict(logit.mod, X_train_pls, type="response")
+logit.mod <- glm(train_response ~ ., data=train_pls, family=binomial(link="logit"))
+
+predict_leukemia <- function(model, X_pls, threshold=0.5) {
+  predicted <- predict(model, X_pls, type="response")
+  predicted <- sapply(as.numeric(predicted), function(i) {return(if(i <= threshold) 0 else 1)})
+  return(predicted)
+}
+train_predicted <- predict_leukemia(logit.mod, X_train_pls, threshold=0.7)
+accuracy <- sum(train_predicted == train_response)/length(train_response)
+accuracy*100
 
 
 # 7
 
-test_predicted <- predict(logit.mod, X_test_pls, type="response")
-test_response <- c(rep(1,11),rep(0,5),rep(1,2),rep(0,2),rep(1,1),rep(0,7),rep(1,6))
-plot(test_response, test_predicted)
+test_predicted <- predict_leukemia(logit.mod, X_test_pls, threshold=0.7)
+accuracy = sum(test_predicted == test_response)/length(test_predicted)
+accuracy*100
+
 
 
 
