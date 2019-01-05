@@ -42,15 +42,46 @@ nd <- 4
 plot(p1, plottype = "scores", comps = 1:2, type="n", main="X Scores")
 text(p1$scores, labels=rownames(p1$scores), col=as.vector(factor(train_response,levels=c(0,1),labels=c("red","blue"))))
 abline(h=0,v=0, col="gray")
+legend(58900, 50500, legend=c("ALL", "AML"),
+       col=c("red", "blue"), lty=1:2, cex=0.8)
 
 # prediction plot
 #plot(p1, ncomp = nd, asp = 1, line = TRUE, type="n")
 #text(Y_train, p1$fitted.values[,,nd], labels=rownames(X_train), col=as.vector(factor(train_response,levels=c(0,1),labels=c("red","blue"))))
 
 
+predict_leukemia <- function(model, X_pls, threshold=0.5, ncomp=NULL) {
+  if (!is.null(ncomp)) {
+    predicted <- predict(model, newdata=X_pls, ncomp=ncomp, type="response")
+  } else {
+    predicted <- predict(model, newdata=X_pls, type="response")
+  }
+  
+  predicted <- sapply(as.numeric(predicted), function(i) {return(if(i <= threshold) 0 else 1)})
+  return(predicted)
+}
+
+thresholds <- seq(0,1, by=0.1)
+accuracyTrain <- rep(0,length(thresholds))
+accuracyTest <- rep(0,length(thresholds))
+for (i in 1:length(thresholds)) {
+  t <- thresholds[i]
+  
+  train_predicted <- predict_leukemia(p1, X_train, threshold=t, ncomp=nd)
+  accuracyTrain[i] <- sum(train_predicted == train_response)/length(train_response)*100
+  
+  test_predicted <- predict_leukemia(p1, X_test, threshold=t, ncomp=nd)
+  accuracyTest[i] <- sum(test_predicted == test_response)/length(test_predicted)*100
+}
+
+plot(rep(thresholds,2), c(accuracyTrain,accuracyTest),
+     main="Accuracy with PSLR model", xlab="Thresholds", ylab="Accuracy")
+lines(thresholds, accuracyTrain, col="orange", lwd=4)
+lines(thresholds, accuracyTest, col="green", lwd=4)
+
 # 4
 
-X_train_pls <- p1$scores
+X_train_pls <- p1$scores[,1:nd]
 train_pls <- as.data.frame(cbind(X_train_pls, train_response))
 X_train_pls <- train_pls[,which(colnames(train_pls)!="train_response")]
 
@@ -58,36 +89,41 @@ X_test_centered <- scale(X_test, center = colMeans(X_train),
                     scale = FALSE)
 
 X_test_pls <- X_test_centered %*% p1$projection
-X_test_pls <- as.data.frame(X_test_pls)
+X_test_pls <- as.data.frame(X_test_pls[,1:nd])
 
 
 # 5
 plot(p1, plottype = "scores", comps = 1:2, type="n", main="X Scores")
 text(X_train_pls, labels=rownames(X_train_pls), col=as.vector(factor(train_response,levels=c(0,1),labels=c("red","blue"))))
 text(X_test_pls, labels=rownames(X_test_pls), col=as.vector(factor(test_response,levels=c(0,1),labels=c("darkred","darkblue"))))
-
+legend(53100, 50500, legend=c("ALL train", "AML train", "ALL test", "AML test"),
+       col=c("red", "blue", "darkred", "darkblue"), lty=c(1,1,1,1), cex=0.8)
 
 
 # 6
 
 logit.mod <- glm(train_response ~ ., data=train_pls, family=binomial(link="logit"))
 
-predict_leukemia <- function(model, X_pls, threshold=0.5) {
-  predicted <- predict(model, X_pls, type="response")
-  predicted <- sapply(as.numeric(predicted), function(i) {return(if(i <= threshold) 0 else 1)})
-  return(predicted)
-}
-train_predicted <- predict_leukemia(logit.mod, X_train_pls, threshold=0.7)
-accuracy <- sum(train_predicted == train_response)/length(train_response)
-accuracy*100
-
 
 # 7
 
-test_predicted <- predict_leukemia(logit.mod, X_test_pls, threshold=0.7)
-accuracy = sum(test_predicted == test_response)/length(test_predicted)
-accuracy*100
+thresholds <- seq(0,1, by=0.1)
+accuracyTrain <- rep(0,length(thresholds))
+accuracyTest <- rep(0,length(thresholds))
+for (i in 1:length(thresholds)) {
+  t <- thresholds[i]
+  
+  train_predicted <- predict_leukemia(logit.mod, X_train_pls, threshold=t)
+  accuracyTrain[i] <- sum(train_predicted == train_response)/length(train_response)*100
+  
+  test_predicted <- predict_leukemia(logit.mod, X_test_pls, threshold=t)
+  accuracyTest[i] <- sum(test_predicted == test_response)/length(test_predicted)*100
+}
 
+plot(rep(thresholds,2), c(accuracyTrain,accuracyTest),
+     main="Accuracy with Logistic model", xlab="Thresholds", ylab="Accuracy")
+lines(thresholds, accuracyTrain, col="orange", lwd=4)
+lines(thresholds, accuracyTest, col="green", lwd=4)
 
 
 
