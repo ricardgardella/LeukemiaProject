@@ -127,3 +127,31 @@ lines(thresholds, accuracyTest, col="green", lwd=4)
 
 
 
+
+# plot logistic predictions
+
+summary(logit.mod)
+
+df <- data.frame(c=X_train_pls[,1])
+df$resp <- predict(logit.mod, newdata=X_train_pls, type="response")+0.00
+
+df2 <- data.frame(c=X_test_pls[,1])
+df2$resp <- predict(logit.mod, newdata=X_test_pls, type="response")-0.00
+
+plot(df$c,df$resp, ylab="Response", xlab="Component 1", ylim=c(-0.05, 1.05), pch=16, cex=0.8,
+     col=as.vector(factor(train_response,levels=c(0,1),labels=c("red","blue"))))
+
+range <- range(df$c)
+axe.x = seq(range[1],range[2],length=1000)
+f.x = exp(fit$coef[1]+axe.x*fit$coef[2])/(1+exp(fit$coef[1]+axe.x*fit$coef[2]))
+lines(axe.x,f.x,col="green",lwd=2)
+
+points(df$c,df$resp, ylab="Response", xlab="Component 1", pch=16, cex=0.8,
+       col=as.vector(factor(train_response,levels=c(0,1),labels=c("red","blue"))))
+points(df2$c,df2$resp, ylab="Response", xlab="Component 1", pch=16, cex=0.8,
+       col=as.vector(factor(test_response,levels=c(0,1),labels=c("darkred","darkblue"))))
+
+legend(43500, 0.9, legend=c("ALL train", "AML train", "ALL test", "AML test", "link function"),
+       col=c("red", "blue", "darkred", "darkblue", "green"), pch=c(16,16,16,16,-1), lty=c(0,0,0,0,1), cex=0.8)
+
+
